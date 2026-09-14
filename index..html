@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0A0C12" id="metaThemeColor">
+<title>Isfandiyor — shaxsiy moliya</title>
+
+<!-- Shrift: iOS tizim shrifti ustuvor, Manrope fallback sifatida (tashqi framework emas, faqat shrift) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   0) ASOSIY O'ZGARUVCHILAR (DESIGN TOKENS)
+   ============================================================ */
+:root{
+  --radius-xl: 32px;
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Manrope", "Segoe UI", sans-serif;
+  --ease-liquid: cubic-bezier(.65,0,.35,1);
+  --tab-bar-h: 78px;
+}
+
+/* --- Tungi rejim palitrasi --- */
+[data-theme="dark"]{
+  --bg: #0A0C12;
+  --bg-elevated: #12141C;
+  --blob-1: #6C63FF;
+  --blob-2: #22C08F;
+  --blob-3: #FB7185;
+  --glass-bg: rgba(255,255,255,0.06);
+  --glass-bg-strong: rgba(255,255,255,0.10);
+  --glass-border: rgba(255,255,255,0.14);
+  --glass-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  --text: #F5F6FA;
+  --text-muted: #9AA1B2;
+  --text-faint: #5D6478;
+  --accent: #8F87FF;
+  --accent-2: #6C63FF;
+  --income: #34D399;
+  --income-bg: rgba(52,211,153,0.15);
+  --expense: #FB7185;
+  --expense-bg: rgba(251,113,133,0.15);
+  --sheet-bg: rgba(18,20,28,0.9);
+  --divider: rgba(255,255,255,0.08);
+  --input-bg: rgba(255,255,255,0.06);
+}
+
+/* --- Kunduzgi rejim palitrasi --- */
+[data-theme="light"]{
+  --bg: #EEF1F7;
+  --bg-elevated: #FFFFFF;
+  --blob-1: #B4C0FB;
+  --blob-2: #9BEFCF;
+  --blob-3: #FDB3BF;
+  --glass-bg: rgba(255,255,255,0.6);
+  --glass-bg-strong: rgba(255,255,255,0.8);
+  --glass-border: rgba(255,255,255,0.9);
+  --glass-shadow: 0 12px 36px rgba(60,70,110,0.14);
+  --text: #171A22;
+  --text-muted: #666F85;
+  --text-faint: #9BA2B4;
+  --accent: #6C63FF;
+  --accent-2: #554FDB;
+  --income: #0FA968;
+  --income-bg: rgba(15,169,104,0.12);
+  --expense: #E23F5C;
+  --expense-bg: rgba(226,63,92,0.12);
+  --sheet-bg: rgba(255,255,255,0.92);
+  --divider: rgba(20,20,30,0.08);
+  --input-bg: rgba(20,20,30,0.04);
+}
+
+/* ============================================================
+   1) UMUMIY RESET VA ASOS
+   ============================================================ */
+*{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body{ height: 100%; }
+body{
+  margin:0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color .4s var(--ease-liquid), color .4s var(--ease-liquid);
+  overflow-x: hidden;
+}
+button, input{ font-family: inherit; }
+::selection{ background: var(--accent); color:#fff; }
+:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Skroll panellarini nozik ko'rinishga keltirish */
+::-webkit-scrollbar{ width: 0; height: 0; }
+
+/* ============================================================
+   2) "TELEFON QURILMA" RAMKASI
+   Katta ekranlarda ilova mobil qurilma ko'rinishida markazda,
+   kichik ekranlarda (haqiqiy telefon) to'liq ekranga cho'ziladi.
+   ============================================================ */
+.app-frame{
+  position: relative;
+  max-width: 430px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  isolation: isolate;
+}
+@media (min-width: 481px){
+  body{ display:flex; justify-content:center; padding: 28px 12px; }
+  .app-frame{
+    border-radius: 46px;
+    box-shadow: 0 40px 90px rgba(0,0,0,0.35), 0 0 0 10px var(--bg-elevated), 0 0 0 11px var(--divider);
+    min-height: min(920px, 100dvh - 56px);
+    height: min(920px, 100dvh - 56px);
+  }
+}
+
+/* Fon uchun yumshoq "glassmorphism" bulutchalar (blur bilan) */
+.bg-blobs{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.bg-blobs .blob{
+  position:absolute; border-radius:50%;
+  filter: blur(70px); opacity:.55;
+  animation: floaty 16s ease-in-out infinite;
+}
+.blob.b1{ width:260px; height:260px; background:var(--blob-1); top:-60px; left:-60px; }
+.blob.b2{ width:220px; height:220px; background:var(--blob-2); bottom:120px; right:-70px; animation-delay:-5s; }
+.blob.b3{ width:200px; height:200px; background:var(--blob-3); bottom:-60px; left:20%; animation-delay:-10s; }
+@keyframes floaty{
+  0%,100%{ transform: translate(0,0) scale(1); }
+  50%{ transform: translate(18px,-24px) scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce){ .blob{ animation:none; } }
+
+/* Tema almashtirish uchun "liquid" doiraviy pardoz (JS orqali boshqariladi) */
+.theme-ripple{
+  position: fixed; inset:0; z-index: 999;
+  clip-path: circle(0px at 50% 0%);
+  pointer-events: none; display:none;
+}
+
+/* ============================================================
+   3) GLASSMORPHISM ASOSIY KLASSI
+   ============================================================ */
+.glass{
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* ============================================================
+   4) SARLAVHA (HEADER)
+   ============================================================ */
+.app-header{
+  position: relative; z-index: 2;
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 22px 22px 8px;
+}
+.greeting{ font-size: 13px; color: var(--text-muted); font-weight:500; }
+.app-name{
+  font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
+  background: linear-gradient(120deg, var(--accent), var(--income));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.theme-toggle{
+  width:46px; height:46px; border-radius:50%; border:1px solid var(--glass-border);
+  background: var(--glass-bg); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:19px; position:relative; overflow:hidden;
+}
+.theme-toggle:active{ transform: scale(0.92); }
+.theme-toggle .icon{ position:absolute; transition: transform .5s var(--ease-liquid), opacity .4s; }
+[data-theme="dark"] .theme-toggle .sun{ transform: translateY(30px); opacity:0; }
+[data-theme="dark"] .theme-toggle .moon{ transform: translateY(0); opacity:1; }
+[data-theme="light"] .theme-toggle .sun{ transform: translateY(0); opacity:1; }
+[data-theme="light"] .theme-toggle .moon{ transform: translateY(-30px); opacity:0; }
+
+/* ============================================================
+   5) ASOSIY KONTENT / SKROLL HUDUDI
+   ============================================================ */
+.app-content{
+  position: relative; z-index: 1;
+  height: calc(100% - 84px);
+  overflow-y: auto;
+  padding: 6px 20px calc(var(--tab-bar-h) + 110px);
+  scroll-behavior: smooth;
+}
+.tab-page{ display:none; animation: fadeUp .35s var(--ease-liquid); }
+.tab-page.active{ display:block; }
+@keyframes fadeUp{ from{ opacity:0; transform: translateY(8px); } to{ opacity:1; transform:none; } }
+
+.section-title{
+  font-size: 16px; font-weight: 700; margin: 22px 2px 12px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.section-title .link{ font-size:12.5px; font-weight:600; color: var(--accent); cursor:pointer; }
+
+/* ============================================================
+   6) BALANS "HERO" KARTASI
+   ============================================================ */
+.balance-card{
+  border-radius: var(--radius-xl);
+  padding: 26px 24px;
+  margin-top: 14px;
+  position: relative;
+  overflow:hidden;
+}
+.balance-card::after{
+  content:""; position:absolute; inset:0; z-index:-1;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%);
+}
+.balance-label{ font-size:12.5px; color: var(--text-muted); font-weight:600; }
+.balance-amount{
+  font-size: clamp(32px, 9vw, 42px); font-weight:800; letter-spacing:-0.8px;
+  margin-top:6px; font-variant-numeric: tabular-nums;
+  display:flex; align-items:baseline; gap:6px;
+}
+.balance-amount span.unit{ font-size:14px; font-weight:600; color:var(--text-muted); }
+
+.stat-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+.stat-pill{
+  border-radius: var(--radius-md); padding:14px 16px;
+}
+.stat-pill .top{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); font-weight:600; }
+.stat-pill .dot{ width:8px; height:8px; border-radius:50%; }
+.stat-pill.in .dot{ background:var(--income); }
+.stat-pill.out .dot{ background:var(--expense); }
+.stat-pill .amt{ margin-top:8px; font-size:18px; font-weight:800; font-variant-numeric: tabular-nums; }
+.stat-pill.in .amt{ color:var(--income); }
+.stat-pill.out .amt{ color:var(--expense); }
+
+/* ============================================================
+   7) OPERATSIYA QATORI (mini-ro'yxat va tarix uchun umumiy)
+   ============================================================ */
+.tx-list{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+.tx-row{
+  display:flex; align-items:center; gap:12px;
+  padding: 12px 14px; border-radius: var(--radius-md);
+}
+.tx-icon{
+  width:42px; height:42px; border-radius:14px; flex:none;
+  display:flex; align-items:center; justify-content:center; font-size:19px;
+}
+.tx-row.in .tx-icon{ background: var(--income-bg); }
+.tx-row.out .tx-icon{ background: var(--expense-bg); }
+.tx-info{ flex:1; min-width:0; }
+.tx-info .cat{ font-size:14px; font-weight:700; }
+.tx-info .meta{ font-size:11.5px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tx-amt{ font-size:14.5px; font-weight:800; font-variant-numeric: tabular-nums; white-space:nowrap; }
+.tx-row.in .tx-amt{ color:var(--income); }
+.tx-row.out .tx-amt{ color:var(--expense); }
+.tx-del{
+  background:none; border:none; color:var(--text-faint); font-size:14px; padding:4px 2px; cursor:pointer;
+}
+
+.empty-state{
+  text-align:center; padding: 34px 16px; color:var(--text-muted); font-size:13px;
+  border-radius: var(--radius-md);
+}
+
+/* ============================================================
+   8) SEGMENTED CONTROL / FILTR CHIPLAR
+   ============================================================ */
+.segmented{
+  display:flex; border-radius: 999px; padding:4px; gap:4px; margin-top:14px;
+}
+.segmented button{
+  flex:1; border:none; background:transparent; color:var(--text-muted);
+  padding:9px 10px; border-radius:999px; font-size:12.5px; font-weight:700; cursor:pointer;
+  transition: background .3s, color .3s;
+}
+.segmented button.active{ background: var(--accent); color:#fff; }
+
+.chip-row{ display:flex; gap:8px; margin-top:14px; }
+.chip{
+  border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-muted);
+  padding:7px 14px; border-radius:999px; font-size:12px; font-weight:600; cursor:pointer;
+}
+.chip.active{ color:#fff; background:var(--accent); border-color:var(--accent); }
+
+/* ============================================================
+   9) STATISTIKA: DONUT DIAGRAMMA + LEGENDA
+   ============================================================ */
+.donut-card{ border-radius: var(--radius-xl); padding:24px; margin-top:14px; text-align:center; }
+.donut-wrap{ position:relative; width:180px; height:180px; margin: 6px auto 4px; }
+.donut{ width:100%; height:100%; border-radius:50%; }
+.donut-center{
+  position:absolute; inset:18px; border-radius:50%;
+  background: var(--bg-elevated);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+.donut-center .lbl{ font-size:10.5px; color:var(--text-muted); font-weight:600; }
+.donut-center .val{ font-size:16px; font-weight:800; margin-top:3px; font-variant-numeric: tabular-nums; }
+
+.legend{ margin-top: 18px; display:flex; flex-direction:column; gap:12px; text-align:left; }
+.legend-row .top{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-bottom:6px; }
+.legend-row .top .name{ display:flex; align-items:center; gap:8px; font-weight:600; }
+.legend-row .swatch{ width:9px; height:9px; border-radius:3px; flex:none; }
+.legend-row .pct{ color:var(--text-muted); font-weight:600; }
+.legend-track{ height:6px; border-radius:4px; background: var(--input-bg); overflow:hidden; }
+.legend-fill{ height:100%; border-radius:4px; }
+
+.compare-card{ border-radius: var(--radius-lg); padding:18px 20px; margin-top:14px; }
+.compare-bar-row{ display:flex; align-items:center; gap:10px; font-size:12px; margin-top:10px; }
+.compare-bar-row .lbl{ width:52px; color:var(--text-muted); font-weight:600; }
+.compare-track{ flex:1; height:9px; border-radius:5px; background:var(--input-bg); overflow:hidden; }
+.compare-fill{ height:100%; border-radius:5px; }
+.compare-bar-row .v{ width:66px; text-align:right; font-weight:700; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   10) PASTKI TAB-BAR
+   ============================================================ */
+.tab-bar{
+  position:absolute; left:16px; right:16px; bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 5; border-radius: 26px; display:flex; padding:8px;
+}
+.tab-btn{
+  flex:1; border:none; background:transparent; color:var(--text-faint);
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:9px 4px; border-radius:18px; font-size:10.5px; font-weight:700; cursor:pointer;
+}
+.tab-btn span{ display:block; }
+.tab-btn.active{ color:var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.tab-btn .ic{ font-size:18px; }
+
+/* ============================================================
+   11) FLOATING ACTION BUTTON (+)
+   ============================================================ */
+.fab{
+  position:absolute; right:22px; bottom: calc(var(--tab-bar-h) + 22px);
+  z-index: 6; width:58px; height:58px; border-radius:50%; border:none;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color:#fff; font-size:28px; line-height:1; cursor:pointer;
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.fab:active{ transform: scale(0.92); }
+
+/* ============================================================
+   12) BOTTOM SHEET (Operatsiya qo'shish oynasi)
+   ============================================================ */
+.sheet-backdrop{
+  position:absolute; inset:0; z-index: 10; background: rgba(0,0,0,0.4);
+  opacity:0; pointer-events:none; transition: opacity .35s var(--ease-liquid);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.sheet-backdrop.show{ opacity:1; pointer-events:auto; }
+
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; z-index: 11;
+  background: var(--sheet-bg);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-radius: 28px 28px 0 0;
+  padding: 10px 22px calc(26px + env(safe-area-inset-bottom));
+  transform: translateY(105%);
+  transition: transform .5s var(--ease-liquid);
+  max-height: 86%; overflow-y:auto;
+  box-shadow: 0 -20px 60px rgba(0,0,0,0.35);
+}
+.sheet.show{ transform: translateY(0); }
+.sheet-handle{ width:40px; height:5px; border-radius:3px; background:var(--divider); margin: 6px auto 14px; }
+.sheet h2{ font-size:18px; font-weight:800; margin: 0 0 16px; }
+
+.type-toggle{ display:flex; background:var(--input-bg); border-radius:14px; padding:4px; gap:4px; }
+.type-toggle button{
+  flex:1; border:none; padding:11px; border-radius:11px; font-size:13.5px; font-weight:700;
+  background:transparent; color:var(--text-muted); cursor:pointer; transition: all .3s;
+}
+.type-toggle button.active[data-type="kirim"]{ background:var(--income-bg); color:var(--income); }
+.type-toggle button.active[data-type="chiqim"]{ background:var(--expense-bg); color:var(--expense); }
+
+.amount-input-wrap{
+  display:flex; align-items:baseline; justify-content:center; gap:8px;
+  margin: 22px 0 6px;
+}
+.amount-input-wrap input{
+  width: 100%; max-width: 220px; text-align:center;
+  font-size: 40px; font-weight:800; border:none; background:transparent; color:var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.amount-input-wrap input::placeholder{ color: var(--text-faint); }
+.amount-input-wrap .unit{ font-size:15px; color:var(--text-muted); font-weight:700; }
+
+.category-grid{
+  display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin: 18px 0 4px;
+}
+.cat-btn{
+  border:1px solid var(--glass-border); background:var(--glass-bg);
+  border-radius: var(--radius-sm); padding: 10px 4px;
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  font-size:10.5px; font-weight:600; color:var(--text-muted); cursor:pointer;
+}
+.cat-btn .ic{ font-size:19px; }
+.cat-btn.active{ border-color:var(--accent); color:var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+.field{ margin-top:16px; }
+.field label{ display:block; font-size:12px; color:var(--text-muted); font-weight:600; margin-bottom:6px; }
+.field input{
+  width:100%; padding:12px 14px; border-radius: var(--radius-sm);
+  border:1px solid var(--glass-border); background:var(--input-bg); color:var(--text); font-size:14px;
+}
+
+.btn-primary{
+  width:100%; margin-top:22px; padding:15px; border:none; border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff;
+  font-size:15px; font-weight:800; cursor:pointer;
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.btn-primary:disabled{ opacity:.4; box-shadow:none; cursor:not-allowed; }
+.btn-primary:active:not(:disabled){ transform: scale(0.98); }
+
+.sheet-close{
+  position:absolute; top:14px; right:18px; width:32px; height:32px; border-radius:50%;
+  border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-muted);
+  font-size:14px; cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="app-frame" id="appFrame">
+
+  <!-- Fon uchun harakatlanuvchi rangli "shisha" bulutchalar -->
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+  </div>
+
+  <!-- Tema almashtirishda ishlatiladigan "liquid" doira pardoz -->
+  <div class="theme-ripple" id="themeRipple"></div>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="app-header">
+    <div>
+      <div class="greeting" id="greeting">Xayrli kun</div>
+      <div class="app-name">Isfandiyor</div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Rejimni almashtirish">
+      <span class="icon sun">☀️</span>
+      <span class="icon moon">🌙</span>
+    </button>
+  </header>
+
+  <!-- ==================== ASOSIY KONTENT ==================== -->
+  <main class="app-content">
+
+    <!-- ---------- TAB 1: BOSH SAHIFA ---------- -->
+    <section class="tab-page active" id="tab-home">
+
+      <div class="balance-card glass">
+        <div class="balance-label">Umumiy balans</div>
+        <div class="balance-amount"><span id="balanceValue">0</span><span class="unit">so'm</span></div>
+
+        <div class="stat-row">
+          <div class="stat-pill glass in">
+            <div class="top"><span class="dot"></span>Jami kirim</div>
+            <div class="amt" id="totalIn">0</div>
+          </div>
+          <div class="stat-pill glass out">
+            <div class="top"><span class="dot"></span>Jami chiqim</div>
+            <div class="amt" id="totalOut">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        So'nggi operatsiyalar
+        <span class="link" id="seeAllLink">Barchasini ko'rish →</span>
+      </div>
+      <div class="tx-list" id="homeTxList"></div>
+    </section>
+
+    <!-- ---------- TAB 2: STATISTIKA ---------- -->
+    <section class="tab-page" id="tab-stats">
+
+      <div class="segmented glass" style="margin-top:14px;">
+        <button class="scope-btn active" data-scope="month">Bu oy</button>
+        <button class="scope-btn" data-scope="all">Umumiy</button>
+      </div>
+
+      <div class="compare-card glass">
+        <div style="font-size:13px; font-weight:700;">Kirim va chiqim taqqoslovi</div>
+        <div class="compare-bar-row">
+          <div class="lbl" style="color:var(--income);">Kirim</div>
+          <div class="compare-track"><div class="compare-fill" id="cmpIn" style="background:var(--income);"></div></div>
+          <div class="v" id="cmpInVal">0</div>
+        </div>
+        <div class="compare-bar-row">
+          <div class="lbl" style="color:var(--expense);">Chiqim</div>
+          <div class="compare-track"><div class="compare-fill" id="cmpOut" style="background:var(--expense);"></div></div>
+          <div class="v" id="cmpOutVal">0</div>
+        </div>
+      </div>
+
+      <div class="donut-card glass">
+        <div style="font-size:13px; font-weight:700; text-align:left;">Xarajatlar tahlili</div>
+        <div class="donut-wrap">
+          <div class="donut" id="donutChart"></div>
+          <div class="donut-center">
+            <div class="lbl">Jami chiqim</div>
+            <div class="val" id="donutTotal">0</div>
+          </div>
+        </div>
+        <div class="legend" id="donutLegend"></div>
+      </div>
+    </section>
+
+    <!-- ---------- TAB 3: TARIX ---------- -->
+    <section class="tab-page" id="tab-history">
+      <div class="chip-row">
+        <button class="chip active" data-filter="all">Hammasi</button>
+        <button class="chip" data-filter="kirim">Kirim</button>
+        <button class="chip" data-filter="chiqim">Chiqim</button>
+      </div>
+      <div class="tx-list" id="historyTxList" style="margin-top:16px;"></div>
+    </section>
+
+  </main>
+
+  <!-- ==================== FAB (+) ==================== -->
+  <button class="fab" id="fabAdd" aria-label="Yangi operatsiya qo'shish">+</button>
+
+  <!-- ==================== PASTKI TAB-BAR ==================== -->
+  <nav class="tab-bar glass">
+    <button class="tab-btn active" data-tab="home"><span class="ic">🏠</span><span>Bosh sahifa</span></button>
+    <button class="tab-btn" data-tab="stats"><span class="ic">📊</span><span>Statistika</span></button>
+    <button class="tab-btn" data-tab="history"><span class="ic">🧾</span><span>Tarix</span></button>
+  </nav>
+
+  <!-- ==================== BOTTOM SHEET: OPERATSIYA QO'SHISH ==================== -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="addSheet">
+    <button class="sheet-close" id="sheetClose">✕</button>
+    <div class="sheet-handle"></div>
+    <h2>Yangi operatsiya</h2>
+
+    <div class="type-toggle" id="sheetTypeToggle">
+      <button type="button" data-type="kirim" class="active">Kirim</button>
+      <button type="button" data-type="chiqim">Chiqim</button>
+    </div>
+
+    <div class="amount-input-wrap">
+      <input type="number" id="sAmount" placeholder="0" min="0" step="1" inputmode="numeric">
+      <span class="unit">so'm</span>
+    </div>
+
+    <div class="category-grid" id="categoryGrid"></div>
+
+    <div class="field">
+      <label>Sana</label>
+      <input type="date" id="sDate">
+    </div>
+    <div class="field">
+      <label>Izoh (ixtiyoriy)</label>
+      <input type="text" id="sNote" placeholder="masalan: do'stona kechki ovqat" maxlength="120">
+    </div>
+
+    <button class="btn-primary" id="saveBtn" disabled>Saqlash</button>
+  </div>
+
+</div>
+
+<script>
+/* ================================================================
+   ISFANDIYOR — shaxsiy moliya ilovasi
+   Faqat vanilla JavaScript, tashqi kutubxonalarsiz.
+   ================================================================ */
+(function () {
+  "use strict";
+
+  /* -------------------- 1) SOZLAMALAR VA MA'LUMOTLAR -------------------- */
+
+  var STORAGE_KEY = "isfandiyor_transactions_v1";
+  var THEME_KEY   = "isfandiyor_theme_v1";
+
+  // Ripple animatsiyasi uchun CSS o'zgaruvchilariga mos fon ranglari
+  var THEME_BG = { dark: "#0A0C12", light: "#EEF1F7" };
+
+  // Har bir toifa uchun ikonka (emoji — tashqi ikonka kutubxonasiz)
+  var CATEGORIES = {
+    kirim: [
+      { name: "Ish haqi", icon: "💼" },
+      { name: "Biznes", icon: "📈" },
+      { name: "Frilans", icon: "💻" },
+      { name: "Sovg'a", icon: "🎁" },
+      { name: "Investitsiya", icon: "🪙" },
+      { name: "Boshqa", icon: "➕" }
+    ],
+    chiqim: [
+      { name: "Oziq-ovqat", icon: "🍽️" },
+      { name: "Transport", icon: "🚗" },
+      { name: "Kommunal", icon: "💡" },
+      { name: "Kiyim-kechak", icon: "👕" },
+      { name: "Sog'liq", icon: "🏥" },
+      { name: "Ta'lim", icon: "📚" },
+      { name: "Ko'ngilochar", icon: "🎬" },
+      { name: "Aloqa", icon: "📶" },
+      { name: "Uy-joy", icon: "🏠" },
+      { name: "Boshqa", icon: "🧾" }
+    ]
+  };
+
+  // Statistika donut-diagrammasi uchun rang palitrasi
+  var PALETTE = ["#FB7185","#F59E0B","#34D399","#60A5FA","#A78BFA","#F472B6","#38BDF8","#FBBF24","#4ADE80","#FB923C"];
+
+  var state = {
+    transactions: loadTransactions(),
+    activeTab: "home",
+    historyFilter: "all",
+    statsScope: "month",
+    sheetType: "kirim",
+    sheetCategory: null
+  };
+
+  /* -------------------- 2) LOCALSTORAGE YORDAMCHILARI -------------------- */
+
+  function loadTransactions() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveTransactions() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.transactions));
+  }
+  function uid() {
+    return "t_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  /* -------------------- 3) UMUMIY YORDAMCHI FUNKSIYALAR -------------------- */
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function fmt(n) { return new Intl.NumberFormat("uz-UZ").format(Math.round(n)); }
+
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+  function findCategoryMeta(type, name) {
+    var list = CATEGORIES[type] || [];
+    for (var i = 0; i < list.length; i++) if (list[i].name === name) return list[i];
+    return { name: name, icon: "💳" };
+  }
+
+  function sumByType(txs, type) {
+    return txs.filter(function (t) { return t.type === type; })
+              .reduce(function (s, t) { return s + t.amount; }, 0);
+  }
+
+  function scopedTransactions() {
+    if (state.statsScope === "all") return state.transactions;
+    var m = todayISO().slice(0, 7);
+    return state.transactions.filter(function (t) { return t.date.slice(0, 7) === m; });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function formatDate(iso) {
+    var d = new Date(iso + "T00:00:00");
+    var months = ["Yan","Fev","Mar","Apr","May","Iyun","Iyul","Avg","Sen","Okt","Noy","Dek"];
+    return String(d.getDate()).padStart(2, "0") + " " + months[d.getMonth()];
+  }
+
+  /* -------------------- 4) SALOMLASHUV MATNI (vaqtga qarab) -------------------- */
+
+  function setGreeting() {
+    var h = new Date().getHours();
+    var text = h < 6 ? "Xayrli tun" : h < 12 ? "Xayrli tong" : h < 18 ? "Xayrli kun" : "Xayrli kech";
+    $("greeting").textContent = text;
+  }
+
+  /* -------------------- 5) TEMA (DARK/LIGHT) — "LIQUID" O'TISH BILAN -------------------- */
+
+  function getTheme() { return localStorage.getItem(THEME_KEY) || "dark"; }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    $("metaThemeColor").setAttribute("content", THEME_BG[theme]);
+    localStorage.setItem(THEME_KEY, theme);
+  }
+
+  function toggleThemeLiquid(e) {
+    var current = getTheme();
+    var next = current === "dark" ? "light" : "dark";
+    var btn = e.currentTarget.getBoundingClientRect();
+    var x = btn.left + btn.width / 2;
+    var y = btn.top + btn.height / 2;
+    var frame = $("appFrame").getBoundingClientRect();
+    // Doira ekranning eng uzoq burchagigacha yetishi uchun radius hisoblanadi
+    var radius = Math.hypot(
+      Math.max(x - frame.left, frame.right - x),
+      Math.max(y - frame.top, frame.bottom - y)
+    );
+
+    var ripple = $("themeRipple");
+    ripple.style.background = THEME_BG[next];
+    ripple.style.display = "block";
+    ripple.style.transition = "none";
+    ripple.style.clipPath = "circle(0px at " + (x - frame.left) + "px " + (y - frame.top) + "px)";
+
+    // Reflow so'ngra silliq ("liquid") kengayish animatsiyasini boshlaymiz
+    requestAnimationFrame(function () {
+      ripple.style.transition = "clip-path .9s cubic-bezier(.65,0,.35,1)";
+      ripple.style.clipPath = "circle(" + radius + "px at " + (x - frame.left) + "px " + (y - frame.top) + "px)";
+    });
+
+    setTimeout(function () {
+      applyTheme(next);           // pardoz ostida haqiqiy tema almashtiriladi
+      ripple.style.transition = "none";
+      ripple.style.display = "none";
+    }, 900);
+  }
+
+  /* -------------------- 6) TAB (BO'LIM) ALMASHTIRISH -------------------- */
+
+  function switchTab(tab) {
+    state.activeTab = tab;
+    document.querySelectorAll(".tab-page").forEach(function (p) {
+      p.classList.toggle("active", p.id === "tab-" + tab);
+    });
+    document.querySelectorAll(".tab-btn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-tab") === tab);
+    });
+    document.querySelector(".app-content").scrollTop = 0;
+  }
+
+  /* -------------------- 7) RENDER: BALANS VA BOSH SAHIFA -------------------- */
+
+  function renderBalance() {
+    var income = sumByType(state.transactions, "kirim");
+    var expense = sumByType(state.transactions, "chiqim");
+    $("balanceValue").textContent = fmt(income - expense);
+    $("totalIn").textContent = fmt(income) + " so'm";
+    $("totalOut").textContent = fmt(expense) + " so'm";
+  }
+
+  function txRowHtml(t) {
+    var meta = findCategoryMeta(t.type, t.category);
+    var cls = t.type === "kirim" ? "in" : "out";
+    var sign = t.type === "kirim" ? "+" : "\u2212";
+    var noteText = t.note ? escapeHtml(t.note) : formatDate(t.date);
+    return (
+      '<div class="tx-row glass ' + cls + '" data-id="' + t.id + '">' +
+        '<div class="tx-icon">' + meta.icon + "</div>" +
+        '<div class="tx-info">' +
+          '<div class="cat">' + escapeHtml(t.category) + "</div>" +
+          '<div class="meta">' + noteText + " · " + formatDate(t.date) + "</div>" +
+        "</div>" +
+        '<div class="tx-amt">' + sign + " " + fmt(t.amount) + "</div>" +
+        '<button class="tx-del" data-del="' + t.id + '" aria-label="O\'chirish">✕</button>' +
+      "</div>"
+    );
+  }
+
+  function renderHome() {
+    var recent = state.transactions.slice()
+      .sort(function (a, b) { return b.date.localeCompare(a.date) || b.id.localeCompare(a.id); })
+      .slice(0, 5);
+    $("homeTxList").innerHTML = recent.length
+      ? recent.map(txRowHtml).join("")
+      : '<div class="empty-state glass">Hali operatsiyalar yo\'q.<br>Pastdagi "+" tugmasi orqali birinchisini qo\'shing.</div>';
+  }
+
+  /* -------------------- 8) RENDER: TARIX -------------------- */
+
+  function renderHistory() {
+    var txs = state.transactions.slice()
+      .sort(function (a, b) { return b.date.localeCompare(a.date) || b.id.localeCompare(a.id); });
+    if (state.historyFilter !== "all") {
+      txs = txs.filter(function (t) { return t.type === state.historyFilter; });
+    }
+    $("historyTxList").innerHTML = txs.length
+      ? txs.map(txRowHtml).join("")
+      : '<div class="empty-state glass">Bu bo\'limda operatsiya topilmadi.</div>';
+  }
+
+  /* -------------------- 9) RENDER: STATISTIKA -------------------- */
+
+  function renderStats() {
+    var txs = scopedTransactions();
+    var income = sumByType(txs, "kirim");
+    var expense = sumByType(txs, "chiqim");
+    var maxVal = Math.max(1, income, expense);
+
+    $("cmpIn").style.width = Math.round((income / maxVal) * 100) + "%";
+    $("cmpOut").style.width = Math.round((expense / maxVal) * 100) + "%";
+    $("cmpInVal").textContent = fmt(income);
+    $("cmpOutVal").textContent = fmt(expense);
+
+    // Chiqimlarni toifalar bo'yicha guruhlash
+    var byCat = {};
+    txs.filter(function (t) { return t.type === "chiqim"; }).forEach(function (t) {
+      byCat[t.category] = (byCat[t.category] || 0) + t.amount;
+    });
+    var entries = Object.keys(byCat)
+      .map(function (k) { return { name: k, total: byCat[k] }; })
+      .sort(function (a, b) { return b.total - a.total; });
+
+    $("donutTotal").textContent = fmt(expense);
+
+    if (entries.length === 0) {
+      $("donutChart").style.background = "var(--input-bg)";
+      $("donutLegend").innerHTML = '<div class="empty-state">Bu davrda chiqimlar yo\'q.</div>';
+      return;
+    }
+
+    // Conic-gradient orqali donut diagramma yasash
+    var acc = 0;
+    var stops = entries.map(function (e, i) {
+      var pct = (e.total / expense) * 100;
+      var start = acc;
+      acc += pct;
+      var color = PALETTE[i % PALETTE.length];
+      e.color = color;
+      e.pct = pct;
+      return color + " " + start.toFixed(2) + "% " + acc.toFixed(2) + "%";
+    });
+    $("donutChart").style.background = "conic-gradient(" + stops.join(", ") + ")";
+
+    $("donutLegend").innerHTML = entries.map(function (e) {
+      return (
+        '<div class="legend-row">' +
+          '<div class="top">' +
+            '<div class="name"><span class="swatch" style="background:' + e.color + '"></span>' + escapeHtml(e.name) + "</div>" +
+            '<div class="pct">' + e.pct.toFixed(0) + "% · " + fmt(e.total) + "</div>" +
+          "</div>" +
+          '<div class="legend-track"><div class="legend-fill" style="width:' + e.pct.toFixed(1) + '%; background:' + e.color + '"></div></div>' +
+        "</div>"
+      );
+    }).join("");
+  }
+
+  /* -------------------- 10) RENDER: HAMMA JOYNI YANGILASH -------------------- */
+
+  function renderAll() {
+    renderBalance();
+    renderHome();
+    renderHistory();
+    renderStats();
+  }
+
+  /* -------------------- 11) BOTTOM SHEET (OPERATSIYA QO'SHISH) -------------------- */
+
+  function renderCategoryGrid() {
+    var list = CATEGORIES[state.sheetType];
+    if (!list.find(function (c) { return c.name === state.sheetCategory; })) {
+      state.sheetCategory = null;
+    }
+    $("categoryGrid").innerHTML = list.map(function (c) {
+      var active = c.name === state.sheetCategory ? " active" : "";
+      return (
+        '<button type="button" class="cat-btn' + active + '" data-cat="' + escapeHtml(c.name) + '">' +
+          '<span class="ic">' + c.icon + "</span>" + escapeHtml(c.name) +
+        "</button>"
+      );
+    }).join("");
+    updateSaveState();
+  }
+
+  function updateSaveState() {
+    var amount = parseFloat($("sAmount").value);
+    $("saveBtn").disabled = !(amount > 0 && state.sheetCategory && $("sDate").value);
+  }
+
+  function openSheet() {
+    state.sheetType = "kirim";
+    state.sheetCategory = null;
+    $("sAmount").value = "";
+    $("sNote").value = "";
+    $("sDate").value = todayISO();
+    document.querySelectorAll("#sheetTypeToggle button").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-type") === "kirim");
+    });
+    renderCategoryGrid();
+    $("sheetBackdrop").classList.add("show");
+    $("addSheet").classList.add("show");
+  }
+  function closeSheet() {
+    $("sheetBackdrop").classList.remove("show");
+    $("addSheet").classList.remove("show");
+  }
+
+  function saveTransaction() {
+    var amount = parseFloat($("sAmount").value);
+    if (!(amount > 0) || !state.sheetCategory || !$("sDate").value) return;
+    state.transactions.push({
+      id: uid(),
+      type: state.sheetType,
+      amount: amount,
+      category: state.sheetCategory,
+      date: $("sDate").value,
+      note: $("sNote").value.trim()
+    });
+    saveTransactions();
+    closeSheet();
+    renderAll();
+  }
+
+  /* -------------------- 12) HODISALARNI BIRIKTIRISH (EVENT LISTENERS) -------------------- */
+
+  // Tab-bar
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () { switchTab(btn.getAttribute("data-tab")); });
+  });
+  $("seeAllLink").addEventListener("click", function () { switchTab("history"); });
+
+  // Tarix filtrlari
+  document.querySelectorAll(".chip[data-filter]").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      document.querySelectorAll(".chip[data-filter]").forEach(function (c) { c.classList.remove("active"); });
+      chip.classList.add("active");
+      state.historyFilter = chip.getAttribute("data-filter");
+      renderHistory();
+    });
+  });
+
+  // Statistika ko'lami (Bu oy / Umumiy)
+  document.querySelectorAll(".scope-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".scope-btn").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      state.statsScope = btn.getAttribute("data-scope");
+      renderStats();
+    });
+  });
+
+  // O'chirish (event delegation — dinamik qatorlar uchun)
+  document.querySelector(".app-content").addEventListener("click", function (e) {
+    var del = e.target.closest("[data-del]");
+    if (!del) return;
+    var id = del.getAttribute("data-del");
+    state.transactions = state.transactions.filter(function (t) { return t.id !== id; });
+    saveTransactions();
+    renderAll();
+  });
+
+  // Tema tugmasi
+  $("themeToggle").addEventListener("click", toggleThemeLiquid);
+
+  // FAB va sheet boshqaruvi
+  $("fabAdd").addEventListener("click", openSheet);
+  $("sheetClose").addEventListener("click", closeSheet);
+  $("sheetBackdrop").addEventListener("click", closeSheet);
+
+  document.querySelectorAll("#sheetTypeToggle button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#sheetTypeToggle button").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      state.sheetType = btn.getAttribute("data-type");
+      renderCategoryGrid();
+    });
+  });
+
+  $("categoryGrid").addEventListener("click", function (e) {
+    var btn = e.target.closest(".cat-btn");
+    if (!btn) return;
+    state.sheetCategory = btn.getAttribute("data-cat");
+    renderCategoryGrid();
+  });
+
+  $("sAmount").addEventListener("input", updateSaveState);
+  $("sDate").addEventListener("change", updateSaveState);
+  $("saveBtn").addEventListener("click", saveTransaction);
+
+  /* -------------------- 13) ISHGA TUSHIRISH -------------------- */
+
+  applyTheme(getTheme());
+  setGreeting();
+  $("sDate") && ($("sDate").value = todayISO());
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
